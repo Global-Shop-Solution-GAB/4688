@@ -1,0 +1,297 @@
+Program.Sub.ScreenSU.Start
+Gui.F_CommInvoice..Create
+Gui.F_CommInvoice..Caption("Commercial Invoice")
+Gui.F_CommInvoice..Size(12510,7230)
+Gui.F_CommInvoice..MinX(0)
+Gui.F_CommInvoice..MinY(0)
+Gui.F_CommInvoice..Position(0,0)
+Gui.F_CommInvoice..BackColor(-2147483633)
+Gui.F_CommInvoice..MousePointer(0)
+Gui.F_CommInvoice..Event(UnLoad,Unload)
+Gui.F_CommInvoice.cmdRefresh.Create(Button)
+Gui.F_CommInvoice.cmdRefresh.Size(1155,495)
+Gui.F_CommInvoice.cmdRefresh.Position(90,75)
+Gui.F_CommInvoice.cmdRefresh.Caption("REFRESH")
+Gui.F_CommInvoice.cmdRefresh.FontSize(9)
+Gui.F_CommInvoice.cmdRefresh.Event(Click,cmdRefresh_Click)
+Gui.F_CommInvoice.tab1.Create(Tab)
+Gui.F_CommInvoice.tab1.Size(12090,5970)
+Gui.F_CommInvoice.tab1.Position(105,660)
+Gui.F_CommInvoice.tab1.FontSize(9)
+Gui.F_CommInvoice.tab1.Tabs(2)
+Gui.F_CommInvoice.tab1.SetTab(0)
+Gui.F_CommInvoice.tab1.Caption("Shipped")
+Gui.F_CommInvoice.tab1.SetTab(1)
+Gui.F_CommInvoice.tab1.Caption("Invoiced")
+Gui.F_CommInvoice.GsGCShip.Create(GsGridControl)
+Gui.F_CommInvoice.GsGCShip.Size(11805,5385)
+Gui.F_CommInvoice.GsGCShip.Position(75,75)
+Gui.F_CommInvoice.GsGCShip.Parent("tab1",0)
+Gui.F_CommInvoice.GsGCShip.Event(RowClick,gvShip_RowClick)
+Gui.F_CommInvoice.GsGCInvoice.Create(GsGridControl)
+Gui.F_CommInvoice.GsGCInvoice.Size(11805,5385)
+Gui.F_CommInvoice.GsGCInvoice.Position(75,75)
+Gui.F_CommInvoice.GsGCInvoice.Parent("tab1",1)
+Gui.F_CommInvoice.GsGCInvoice.Event(RowClick,gvInvoice_RowClick)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+V.Local.sIcon.Declare
+
+F.ODBC.Connection!conx.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+F.Intrinsic.Control.If(V.Caller.Hook,=,28532)
+	'Shipment post save hook
+	F.Intrinsic.Control.CallSub(hook28532)
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,26252)
+	'Shipment post delete hook
+	F.Intrinsic.Control.CallSub(hook26252)
+F.Intrinsic.Control.Else
+	F.Intrinsic.String.Build("{0}\ART\gss2.ico",V.Caller.GlobalDir,v.Local.sIcon)
+	Gui.F_CommInvoice..Icon(V.Local.sIcon)
+	Gui.F_CommInvoice.tab1.SetTab(0)
+	Gui.F_CommInvoice.tab1.Anchor(15)
+	gui.F_CommInvoice.GsGCShip.Anchor(15)
+	gui.F_CommInvoice.GsGCInvoice.Anchor(15)
+	F.Intrinsic.Control.CallSub(cmdrefresh_click)
+	Gui.F_CommInvoice..Show
+F.Intrinsic.Control.EndIf
+Program.Sub.Main.End
+
+Program.Sub.cmdRefresh_Click.Start
+V.Local.dYearAgo.Declare(Date)
+V.Local.sSQL.Declare
+
+F.Intrinsic.Control.If(V.DataTable.dtShip.Exists,=,True)
+	F.Data.DataTable.Close("dtShip")
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.UI.InvokeWaitDialog("Loading shipment data","Pudak Commercial Invoice [APAC]")
+F.Data.DataTable.CreateFromSQL("dtShip","conx","select distinct(S.PCK_NO) as PCK_NO, S.CUSTOMER, C.NAME_CUSTOMER, S.DATE_SHIPPED, S.CUSTOMER_PO from v_shipment_header S left join v_customer_master C on S.customer = C.customer where S.pck_no <> '' order by s.pck_no desc",True)
+gui.F_CommInvoice.GsGCShip.AddGridviewFromDatatable("gvShip","dtShip")
+gui.F_CommInvoice.GsGCShip.MainView("gvShip")
+gui.F_CommInvoice.GsGCShip.SetColumnProperty("gvShip","PCK_NO","Caption","Delivery Note")
+gui.F_CommInvoice.GsGCShip.SetColumnProperty("gvShip","CUSTOMER","Caption","Customer No.")
+gui.F_CommInvoice.GsGCShip.SetColumnProperty("gvShip","NAME_CUSTOMER","Caption","Customer Name")
+gui.F_CommInvoice.GsGCShip.SetColumnProperty("gvShip","DATE_SHIPPED","Caption","Shipped Date")
+gui.F_CommInvoice.GsGCShip.SetColumnProperty("gvShip","PCK_NO","HeaderHAlignment","Center")
+gui.F_CommInvoice.GsGCShip.SetColumnProperty("gvShip","CUSTOMER","HeaderHAlignment","Center")
+gui.F_CommInvoice.GsGCShip.SetColumnProperty("gvShip","NAME_CUSTOMER","HeaderHAlignment","Center")
+gui.F_CommInvoice.GsGCShip.SetColumnProperty("gvShip","DATE_SHIPPED","HeaderHAlignment","Center")
+gui.F_CommInvoice.GsGCShip.SetColumnProperty("gvShip","PCK_NO","CellHAlignment","Center")
+gui.F_CommInvoice.GsGCShip.SetColumnProperty("gvShip","CUSTOMER","CellHAlignment","Center")
+gui.F_CommInvoice.GsGCShip.SetColumnProperty("gvShip","DATE_SHIPPED","CellHAlignment","Center")
+gui.F_CommInvoice.GsGCShip.SetColumnProperty("gvShip","DATE_SHIPPED","DisplayCustomDateTime","d")
+gui.F_CommInvoice.GsGCShip.SetColumnProperty("gvShip","NAME_CUSTOMER","MinWidth","250")
+gui.F_CommInvoice.GsGCShip.SetColumnProperty("gvShip","CUSTOMER_PO","Visible",False)
+gui.F_CommInvoice.GsGCShip.SetColumnProperty("gvShip","PCK_NO","AllowEdit",False)
+gui.F_CommInvoice.GsGCShip.SetColumnProperty("gvShip","CUSTOMER","AllowEdit",False)
+gui.F_CommInvoice.GsGCShip.SetColumnProperty("gvShip","NAME_CUSTOMER","AllowEdit",False)
+gui.F_CommInvoice.GsGCShip.SetColumnProperty("gvShip","DATE_SHIPPED","AllowEdit",False)
+
+F.Intrinsic.UI.ChangeWaitStatus("Loading invoice data")
+
+F.Intrinsic.Control.If(V.DataTable.dtInvoice.Exists,=,True)
+	F.Data.DataTable.Close("dtInvoice")
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Date.DateAdd("YYYY",-1,V.Ambient.Date,V.Local.dYearAgo)
+F.Intrinsic.String.Build("select distinct(PCK_NO) as PCK_NO, CUSTOMER, NAME_CUSTOMER_SHIP as NAME_CUSTOMER, DATE_SHIPPED, CUSTOMER_PO from v_order_hist_head where PCK_NO <> '' and DATE_SHIPPED >= '{0}' order by PCK_NO desc, ORDER_NO desc, DATE_SHIPPED desc",V.Local.dYearAgo.PervasiveDate,V.Local.sSQL)
+F.Data.DataTable.CreateFromSQL("dtInvoice","conx",V.Local.sSQL,True)
+gui.F_CommInvoice.GsGCInvoice.AddGridviewFromDatatable("gvInvoice","dtInvoice")
+gui.F_CommInvoice.GsGCInvoice.MainView("gvInvoice")
+gui.F_CommInvoice.GsGCInvoice.SetColumnProperty("gvInvoice","PCK_NO","Caption","Delivery Note")
+gui.F_CommInvoice.GsGCInvoice.SetColumnProperty("gvInvoice","CUSTOMER","Caption","Customer No.")
+gui.F_CommInvoice.GsGCInvoice.SetColumnProperty("gvInvoice","NAME_CUSTOMER","Caption","Customer Name")
+gui.F_CommInvoice.GsGCInvoice.SetColumnProperty("gvInvoice","DATE_SHIPPED","Caption","Shipped Date")
+gui.F_CommInvoice.GsGCInvoice.SetColumnProperty("gvInvoice","PCK_NO","HeaderHAlignment","Center")
+gui.F_CommInvoice.GsGCInvoice.SetColumnProperty("gvInvoice","CUSTOMER","HeaderHAlignment","Center")
+gui.F_CommInvoice.GsGCInvoice.SetColumnProperty("gvInvoice","NAME_CUSTOMER","HeaderHAlignment","Center")
+gui.F_CommInvoice.GsGCInvoice.SetColumnProperty("gvInvoice","DATE_SHIPPED","HeaderHAlignment","Center")
+gui.F_CommInvoice.GsGCInvoice.SetColumnProperty("gvInvoice","PCK_NO","CellHAlignment","Center")
+gui.F_CommInvoice.GsGCInvoice.SetColumnProperty("gvInvoice","CUSTOMER","CellHAlignment","Center")
+gui.F_CommInvoice.GsGCInvoice.SetColumnProperty("gvInvoice","DATE_SHIPPED","CellHAlignment","Center")
+gui.F_CommInvoice.GsGCInvoice.SetColumnProperty("gvInvoice","DATE_SHIPPED","DisplayCustomDateTime","d")
+gui.F_CommInvoice.GsGCInvoice.SetColumnProperty("gvInvoice","NAME_CUSTOMER","MinWidth","250")
+gui.F_CommInvoice.GsGCInvoice.SetColumnProperty("gvInvoice","CUSTOMER_PO","Visible",False)
+gui.F_CommInvoice.GsGCInvoice.SetColumnProperty("gvInvoice","PCK_NO","AllowEdit",False)
+gui.F_CommInvoice.GsGCInvoice.SetColumnProperty("gvInvoice","CUSTOMER","AllowEdit",False)
+gui.F_CommInvoice.GsGCInvoice.SetColumnProperty("gvInvoice","NAME_CUSTOMER","AllowEdit",False)
+gui.F_CommInvoice.GsGCInvoice.SetColumnProperty("gvInvoice","DATE_SHIPPED","AllowEdit",False)
+F.Intrinsic.UI.CloseWaitDialog
+Program.Sub.cmdRefresh_Click.End
+
+Program.Sub.Unload.Start
+F.Data.DataTable.Close("dtShip")
+F.Data.DataTable.Close("dtInvoice")
+F.ODBC.Connection!conx.Close
+F.Intrinsic.Control.End
+
+Program.Sub.Unload.End
+
+Program.Sub.Hook28532.Start
+V.Local.dShipDate.Declare(Date)
+V.Local.i1.Declare
+V.Local.i2.Declare
+V.Local.iID.Declare
+V.Local.iLine.Declare(Long,1)
+V.Local.sPckNo.Declare
+V.Local.sSQL.Declare
+
+F.Intrinsic.Control.If(V.Caller.Hook,=,28532)
+	F.Intrinsic.String.LPad(V.Passed.000168,"0",7,V.Local.sPckNo)
+F.Intrinsic.Control.Else
+	V.Local.sPckNo.set(V.Args.sPckNo)
+F.Intrinsic.Control.EndIf
+
+F.ODBC.Connection!conx.ExecuteAndReturn("SELECT TOP 1 ID FROM GAB_4688_INVC_HF ORDER BY ID DESC",V.Local.iID)
+F.Intrinsic.Math.Add(V.Local.iID,1,V.Local.iID)
+
+'Retrieve shipment header
+F.Intrinsic.String.Build("select customer, date_shipped as ShipDate, tracking_no as AWB, eta_date as ETA, carrier_cd as Carrier from v_shipment_header where pck_no = '{0}'",V.Local.sPckNo.Trim,V.Local.sSQL)
+'Write to GAB_4688_INVC_HF
+F.ODBC.Connection!conx.OpenLocalRecordsetRO("rst",V.Local.sSQL)
+V.Local.dShipDate.Set(V.ODBC.conx!rst.FieldVal!ShipDate)
+F.Intrinsic.String.Build("insert into GAB_4688_INVC_HF(id,pck_no,date_shipped,customer,tracking_no,eta_date,carrier_cd) values({0},'{1}','{2}','{3}','{4}','{5}','{6}')",V.Local.iID,V.Local.sPckNo.Trim,V.ODBC.conx!rst.FieldValPervasiveDate!ShipDate,V.ODBC.conx!rst.FieldValTrim!customer,V.ODBC.conx!rst.FieldValTrim!AWB,V.ODBC.conx!rst.FieldValPervasiveDate!ETA,V.ODBC.conx!rst.FieldValTrim!Carrier,V.Local.sSQL)
+F.ODBC.conx!rst.Close
+F.ODBC.Connection!conx.Execute(V.Local.sSQL)
+
+'Retrieve shipment lines
+F.Intrinsic.String.Build("select SL.order_no as SO, SL.order_suffix as Seq, left(SL.order_rec,3) as SOLine, SH.customer_po as PO, SL.ln_user_1 as POLine, SL.Part as Part, SL.price_order as Price, SLT.text as Text from v_shipment_lines SL left join v_shipment_header SH on SL.order_no = SH.order_no and SL.order_suffix = SH.order_suffix left join v_shipment_ln_text SLT on SL.order_no = SLT.ship_number and SL.order_suffix = SLT.suffix and SL.order_rec = SLT.line where SL.pck_no = '{0}' order by SL.order_no, SL.order_suffix, SL.order_rec",V.Local.sPckNo.Trim,V.Local.sSQL)
+F.Data.DataTable.CreateFromSQL("dtLine","conx",V.Local.sSQL)
+F.Intrinsic.Control.For(V.Local.i1,0,V.DataTable.dtLine.RowCount--,1)
+	'Retrieve lot number and quantity from item_history
+	F.Intrinsic.String.Build("select Lot, abs(quantity) as Qty from v_item_history where part = '{0}' and date_history = '{1}' and order_no = '{2}' and order_suffix = '{3}' and order_line = '{4}' and code_transaction = 'O35'",V.DataTable.dtLine(V.Local.i1).Part!FieldValTrim,V.Local.dShipDate.PervasiveDate,V.DataTable.dtLine(V.Local.i1).SO!FieldValTrim,V.DataTable.dtLine(V.Local.i1).Seq!FieldValTrim,V.DataTable.dtLine(V.Local.i1).SOLine!FieldValTrim,V.Local.sSQL)
+	F.Data.DataTable.CreateFromSQL("dtLot","conx",V.Local.sSQL)
+	F.Intrinsic.Control.For(V.Local.i2,0,V.DataTable.dtLot.RowCount--,1)
+		F.Intrinsic.String.Build("insert into GAB_4688_INVC_LN(id,line_no,customer_po,po_line,part,lot,qty,price,notes) values({0},{1},'{2}','{3}','{4}','{5}',{6},{7},'{8}')",V.Local.iID,V.Local.iLine,V.DataTable.dtLine(V.Local.i1).PO!FieldValTrim,V.DataTable.dtLine(V.Local.i1).POLine!FieldValTrim,V.DataTable.dtLine(V.Local.i1).Part!FieldValTrim,V.DataTable.dtLot(V.Local.i2).Lot!FieldValTrim,V.DataTable.dtLot(V.Local.i2).Qty!FieldValLong,V.DataTable.dtLine(V.Local.i1).Price!FieldValFloat,V.DataTable.dtLine(V.Local.i1).Text!FieldValTrim,V.Local.sSQL)
+		F.ODBC.Connection!conx.Execute(V.Local.sSQL)
+		F.Intrinsic.Math.Add(V.Local.iLine,1,V.Local.iLine)
+	F.Intrinsic.Control.Next(V.Local.i2)
+	F.Data.DataTable.Close("dtLot")
+F.Intrinsic.Control.Next(V.Local.i1)
+F.Data.DataTable.Close("dtLine")
+Program.Sub.Hook28532.End
+
+Program.Sub.Hook26252.Start
+V.Local.dShipDate.Declare(Date)
+V.Local.iID.Declare
+V.Local.sCustomer.Declare
+V.Local.sPckNo.Declare
+V.Local.sSQL.Declare
+F.Intrinsic.String.LPad(V.Passed.000003,"0",7,V.Local.sPckNo)
+
+'Retrieve shipment header info
+F.Intrinsic.String.Build("select customer, date_shipped as ShipDate, tracking_no as AWB, eta_date as ETA, carrier_cd as Carrier from v_shipment_header where pck_no = '{0}'",V.Local.sPckNo.Trim,V.Local.sSQL)
+F.ODBC.Connection!conx.OpenLocalRecordsetRO("rst",V.Local.sSQL)
+V.Local.dShipDate.Set(V.ODBC.conx!rst.FieldVal!ShipDate)
+V.Local.sCustomer.Set(V.ODBC.conx!rst.FieldValTrim!customer)
+F.ODBC.conx!rst.Close
+
+'Retrieve ID from GAB_4688_INVC_HF and remove entry from GAB_4688_INVC_LN
+F.Intrinsic.String.Build("select id from GAB_4688_INVC_HF where pck_no = '{0}' and date_shipped = '{1}' and customer = '{2}'",V.Local.sPckNo.Trim,V.Local.dShipDate.PervasiveDate,V.Local.sCustomer.Trim,V.Local.sSQL)
+F.ODBC.Connection!conx.OpenLocalRecordsetRO("rst",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.conx!rst.EOF,=,False)
+	V.Local.iID.Set(V.ODBC.conx!rst.FieldValLong!id)
+	F.Intrinsic.String.Build("delete from GAB_4688_INVC_LN where id = {0}",V.Local.iID,V.Local.sSQL)
+	F.ODBC.Connection!conx.Execute(V.Local.sSQL)
+	'Update customer to ****** in GAB_4688_INVC_HF
+	F.Intrinsic.String.Build("update GAB_4688_INVC_HF set customer = '******' where id = '{0}'",V.Local.iID,V.Local.sSQL)
+	F.ODBC.Connection!conx.Execute(V.Local.sSQL)
+F.Intrinsic.Control.EndIf
+F.ODBC.conx!rst.Close
+
+Program.Sub.Hook26252.End
+
+Program.Sub.gvShip_RowClick.Start
+V.Local.iReportID.Declare
+V.Local.sBIParam.Declare
+V.Local.sBIParamVal.Declare
+V.Local.sSQL.Declare
+
+'Retrieve ID from GAB_4688_INVC_HF 
+F.Intrinsic.String.Build("select id from GAB_4688_INVC_HF where pck_no = '{0}' and date_shipped = '{1}' and customer = '{2}'",V.DataTable.dtShip(V.Args.RowIndex).PCK_NO!FieldValTrim,V.DataTable.dtShip(V.Args.RowIndex).DATE_SHIPPED!FieldValPervasiveDate,V.DataTable.dtShip(V.Args.RowIndex).CUSTOMER!FieldValTrim,V.Local.sSQL)
+F.ODBC.Connection!conx.OpenLocalRecordsetRO("rst",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.conx!rst.EOF,=,True)
+	'Generate commercial invoice data if no ID found
+	F.Intrinsic.Control.CallSub(hook28532,"sPckNo",V.DataTable.dtShip(V.Args.RowIndex).PCK_NO!FieldValTrim)
+F.Intrinsic.Control.EndIf
+
+'Open crystal report
+F.Global.BI.GetIDFromName("GAB_4688_COMMERCIAL_INVOICE.rpt",V.Local.iReportID)
+F.Intrinsic.String.Split("ID*!*","*!*",V.Local.sBIParam)
+F.Intrinsic.String.Concat(V.ODBC.conx!rst.FieldValLong!id,"*!*",V.Local.sBIParamVal)
+F.Intrinsic.String.Split(V.Local.sBIParamVal,"*!*",V.Local.sBIParamVal)
+F.Global.BI.PrintReport(V.Local.iReportID,16,V.Local.sBIParam,V.Local.sBIParamVal,"GSView",True)
+F.ODBC.conx!rst.Close
+Program.Sub.gvShip_RowClick.End
+
+Program.Sub.gvInvoice_RowClick.Start
+V.Local.iReportID.Declare
+V.Local.sBIParam.Declare
+V.Local.sBIParamVal.Declare
+V.Local.sSQL.Declare
+
+'Retrieve ID from GAB_4688_INVC_HF 
+F.Intrinsic.String.Build("select id from GAB_4688_INVC_HF where pck_no = '{0}' and date_shipped = '{1}' and customer = '{2}'",V.DataTable.dtInvoice(V.Args.RowIndex).PCK_NO!FieldValTrim,V.DataTable.dtInvoice(V.Args.RowIndex).DATE_SHIPPED!FieldValPervasiveDate,V.DataTable.dtInvoice(V.Args.RowIndex).CUSTOMER!FieldValTrim,V.Local.sSQL)
+F.ODBC.Connection!conx.OpenLocalRecordsetRO("rst",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.conx!rst.EOF,=,True)
+	'Generate commercial invoice data if no ID found
+	F.Intrinsic.Control.CallSub(GenerateInvoiceData,"sPckNo",V.DataTable.dtInvoice(V.Args.RowIndex).PCK_NO!FieldValTrim)
+F.Intrinsic.Control.EndIf
+
+'Open crystal report
+F.Global.BI.GetIDFromName("GAB_4688_COMMERCIAL_INVOICE.rpt",V.Local.iReportID)
+F.Intrinsic.String.Split("ID*!*","*!*",V.Local.sBIParam)
+F.Intrinsic.String.Concat(V.ODBC.conx!rst.FieldValLong!id,"*!*",V.Local.sBIParamVal)
+F.Intrinsic.String.Split(V.Local.sBIParamVal,"*!*",V.Local.sBIParamVal)
+F.Global.BI.PrintReport(V.Local.iReportID,16,V.Local.sBIParam,V.Local.sBIParamVal,"GSView",True)
+F.ODBC.conx!rst.Close
+Program.Sub.gvInvoice_RowClick.End
+
+Program.Sub.GenerateInvoiceData.Start
+V.Local.dShipDate.Declare(Date)
+V.Local.i1.Declare
+V.Local.i2.Declare
+V.Local.iID.Declare
+V.Local.iLine.Declare(Long,1)
+V.Local.sPckNo.Declare
+V.Local.sSQL.Declare
+
+V.Local.sPckNo.set(V.Args.sPckNo)
+
+F.ODBC.Connection!conx.ExecuteAndReturn("SELECT TOP 1 ID FROM GAB_4688_INVC_HF ORDER BY ID DESC",V.Local.iID)
+F.Intrinsic.Math.Add(V.Local.iID,1,V.Local.iID)
+
+'Retrieve shipment header
+F.Intrinsic.String.Build("select customer, date_shipped as ShipDate, tracking_no as AWB, eta_date as ETA, carrier_cd as Carrier from v_order_hist_head where pck_no = '{0}'",V.Local.sPckNo.Trim,V.Local.sSQL)
+'Write to GAB_4688_INVC_HF
+F.ODBC.Connection!conx.OpenLocalRecordsetRO("rst",V.Local.sSQL)
+V.Local.dShipDate.Set(V.ODBC.conx!rst.FieldVal!ShipDate)
+F.Intrinsic.String.Build("insert into GAB_4688_INVC_HF(id,pck_no,date_shipped,customer,tracking_no,eta_date,carrier_cd) values({0},'{1}','{2}','{3}','{4}','{5}','{6}')",V.Local.iID,V.Local.sPckNo.Trim,V.ODBC.conx!rst.FieldValPervasiveDate!ShipDate,V.ODBC.conx!rst.FieldValTrim!customer,V.ODBC.conx!rst.FieldValTrim!AWB,V.ODBC.conx!rst.FieldValPervasiveDate!ETA,V.ODBC.conx!rst.FieldValTrim!Carrier,V.Local.sSQL)
+F.ODBC.conx!rst.Close
+F.ODBC.Connection!conx.Execute(V.Local.sSQL)
+
+'Retrieve shipment lines
+F.Intrinsic.String.Build("select SH.order_no as SO, SH.order_suffix as Seq, SL.order_line as SOLine, SH.customer_po as PO, SL.user_1 as POLine, SL.part as Part, SL.price_order as Price, SLT.text as Text from v_order_hist_head SH left join v_order_hist_line SL on SH.invoice = SL.invoice and SH.order_no = SL.order_no and SH.order_suffix = SL.order_suffix left join v_order_h_ln_text SLT on SH.invoice = SLT.invc_number and SH.order_no = SLT.order_num and SH.order_suffix = SLT.order_seq and SL.order_line = SLT.order_line where SH.pck_no = '{0}' order by SH.pck_no, SH.order_no, SH.order_suffix",V.Local.sPckNo.Trim,V.Local.sSQL)
+F.Data.DataTable.CreateFromSQL("dtLine","conx",V.Local.sSQL)
+F.Intrinsic.Control.For(V.Local.i1,0,V.DataTable.dtLine.RowCount--,1)
+	'Retrieve lot number and quantity from item_history
+	F.Intrinsic.String.Build("select Lot, abs(quantity) as Qty from v_item_history where part = '{0}' and date_history = '{1}' and order_no = '{2}' and order_suffix = '{3}' and order_line = '{4}' and code_transaction = 'O35'",V.DataTable.dtLine(V.Local.i1).Part!FieldValTrim,V.Local.dShipDate.PervasiveDate,V.DataTable.dtLine(V.Local.i1).SO!FieldValTrim,V.DataTable.dtLine(V.Local.i1).Seq!FieldValTrim,V.DataTable.dtLine(V.Local.i1).SOLine!FieldValTrim,V.Local.sSQL)
+	F.Data.DataTable.CreateFromSQL("dtLot","conx",V.Local.sSQL)
+	F.Intrinsic.Control.For(V.Local.i2,0,V.DataTable.dtLot.RowCount--,1)
+		F.Intrinsic.String.Build("insert into GAB_4688_INVC_LN(id,line_no,customer_po,po_line,part,lot,qty,price,notes) values({0},{1},'{2}','{3}','{4}','{5}',{6},{7},'{8}')",V.Local.iID,V.Local.iLine,V.DataTable.dtLine(V.Local.i1).PO!FieldValTrim,V.DataTable.dtLine(V.Local.i1).POLine!FieldValTrim,V.DataTable.dtLine(V.Local.i1).Part!FieldValTrim,V.DataTable.dtLot(V.Local.i2).Lot!FieldValTrim,V.DataTable.dtLot(V.Local.i2).Qty!FieldValLong,V.DataTable.dtLine(V.Local.i1).Price!FieldValFloat,V.DataTable.dtLine(V.Local.i1).Text!FieldValTrim,V.Local.sSQL)
+		F.ODBC.Connection!conx.Execute(V.Local.sSQL)
+		F.Intrinsic.Math.Add(V.Local.iLine,1,V.Local.iLine)
+	F.Intrinsic.Control.Next(V.Local.i2)
+	F.Data.DataTable.Close("dtLot")
+F.Intrinsic.Control.Next(V.Local.i1)
+F.Data.DataTable.Close("dtLine")
+Program.Sub.GenerateInvoiceData.End
+
+Program.Sub.Comments.Start
+${$0$}$Pudak Commercial Invoice$}$MHERTANTO$}$3/8/2017 10:57:48 AM$}$True
+${$3$}$0$}$$}$0$}$-1$}$$}$12:00:00 AM$}$Custom Commercial Invoice form for PT Pudak Scientific where the form is generated after shipment is done because a different user will generate this report due to confidentiality.
+Program.Sub.Comments.End
